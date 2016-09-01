@@ -90,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
                 uploadFile(getImgURL , getImgName);
 
 
-
             }
         });
 
@@ -99,8 +98,6 @@ public class MainActivity extends AppCompatActivity {
 
     // 선택된 이미지 가져오기
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-
 //        Toast.makeText(getBaseContext(), "resultCode : "+resultCode,Toast.LENGTH_SHORT).show();
 
         if(requestCode == REQ_CODE_SELECT_IMAGE)
@@ -227,32 +224,6 @@ public class MainActivity extends AppCompatActivity {
                         Log.i("MyTag", "error : "+e.getMessage());
                     }
 
-//
-//                    try{
-//
-//                        Log.i("myTag",response.body().string());
-//
-//                        String jsonString  = gson.toJson(response.body().string());
-//                        JSONObject jsonObject = new JSONObject(jsonString);
-//
-//
-//                        Log.i("myTag",jsonString);
-//
-//
-//                        String resultMsg = jsonObject.getString("result");
-//
-//                        if(resultMsg.equals("success")){
-//                            Toast.makeText(getApplicationContext(),"사진 업로드 성공!!!!",Toast.LENGTH_SHORT).show();
-//                        }
-//
-//                    }
-//                    catch (JSONException e) {
-//                        e.printStackTrace();
-//                        Log.i("MyTag", "1"+e.getMessage());
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                        Log.i("MyTag", "2"+e.getMessage());
-//                    }
 
                 }else{
                     Toast.makeText(getApplicationContext(),"사진 업로드 실패!!!!",Toast.LENGTH_SHORT).show();
