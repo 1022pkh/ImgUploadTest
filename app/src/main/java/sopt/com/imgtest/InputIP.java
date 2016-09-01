@@ -49,8 +49,6 @@ public class InputIP extends AppCompatActivity {
 
                 }
                 else{
-
-
                     //IP주소 변경필요!
                     url = "http://" + temp;
 
@@ -64,7 +62,7 @@ public class InputIP extends AppCompatActivity {
                     NetworkService service = retrofit.create(NetworkService.class);
 
                     Call<Result> call = service.connecting();
-                    Log.i("myTag","get");
+//                    Log.i("myTag","get");
 
                     call.enqueue(new Callback<Result>() {
                         @Override
@@ -95,12 +93,16 @@ public class InputIP extends AppCompatActivity {
                                 }
 
                             }
+                            else{
+                                Toast.makeText(getApplicationContext(),url +" 연결 실패 \n서버를 확인해주세요.",Toast.LENGTH_SHORT).show();
+                            }
 
                         }
 
                         @Override
                         public void onFailure(Call<Result> call, Throwable t) {
                             Log.i("myTag",t.toString());
+                            Toast.makeText(getApplicationContext(),url +" 연결 실패 \n서버를 확인해주세요.",Toast.LENGTH_SHORT).show();
                         }
                     });
 

@@ -20,7 +20,6 @@ public interface NetworkService {
 
     @Multipart
     @POST("/upload")
-    Call<ResponseBody> upload(@Part("description") RequestBody description,
-                              @Part MultipartBody.Part file);
+    Call<ResponseBody> upload(@Part MultipartBody.Part file, @Part("name") RequestBody description);
 
 }

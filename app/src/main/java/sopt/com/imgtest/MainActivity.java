@@ -1,12 +1,12 @@
 package sopt.com.imgtest;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -15,6 +15,10 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -28,6 +32,7 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
+import sopt.com.imgtest.model.UploadResult;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -39,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     String getImgName="";
 
     final int REQ_CODE_SELECT_IMAGE=100;
+    ProgressDialog asyncDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,14 +74,23 @@ public class MainActivity extends AppCompatActivity {
         uploadImg.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(getApplicationContext(),getImgURL,Toast.LENGTH_SHORT).show();
+//                Toast.makeText(getApplicationContext(),getImgURL,Toast.LENGTH_SHORT).show();
                 /**
                  * getImgBtn 버튼 클릭을 통해, 업로드할 사진의 절대경로를 가져옴
-                 * 이를 어떻게 서버로 보내야할까??
+                 * 서버로 보내는 시간을 고려하여 진행바를 넣어줌
                  */
 
+                asyncDialog = new ProgressDialog(MainActivity.this);
+                asyncDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                asyncDialog.setMessage("로딩중입니다..");
+
+                // show dialog
+                asyncDialog.show();
 
                 uploadFile(getImgURL , getImgName);
+
+
+
             }
         });
 
@@ -86,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
 
-        Toast.makeText(getBaseContext(), "resultCode : "+resultCode,Toast.LENGTH_SHORT).show();
+//        Toast.makeText(getBaseContext(), "resultCode : "+resultCode,Toast.LENGTH_SHORT).show();
 
         if(requestCode == REQ_CODE_SELECT_IMAGE)
         {
@@ -95,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     //Uri에서 이미지 이름을 얻어온다.
                     String name_Str = getImageNameToUri(data.getData());
-                    getImgURL = name_Str;
 
                     Log.i("myTag",name_Str);
 
@@ -142,12 +156,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void uploadFile(String ImgURL, String ImgName) {
 
-        //IP주소 변경필요!
+        /**
+         * 현재 연결된 서버의 URL을 받아옴
+         */
         String url = getServerURL;
 
-        //file_name이 이름 or 절대경로 말하는 것인지??
-        String file_name = ImgName;
-
+        /**
+         * 다시 연결 시도
+         */
         // create upload service client
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(url)
@@ -156,35 +172,107 @@ public class MainActivity extends AppCompatActivity {
         NetworkService service = retrofit.create(NetworkService.class);
 
 
-        File file = new File(Environment.getExternalStorageDirectory().toString(), file_name);
+        /**
+         * 서버로 보낼 파일의 전체 url을 이용해 작업
+         */
 
-        // create RequestBody instance from file
-        RequestBody requestFile =
-                RequestBody.create(MediaType.parse("multipart/form-data"), file);
+        File photo = new File(ImgURL);
+        RequestBody photoBody = RequestBody.create(MediaType.parse("image/jpg"), photo);
 
         // MultipartBody.Part is used to send also the actual file name
-        MultipartBody.Part body =
-                MultipartBody.Part.createFormData("picture", file.getName(), requestFile);
+        MultipartBody.Part body = MultipartBody.Part.createFormData("picture", photo.getName(), photoBody);
 
+//        Log.i("myTag","this file'name is "+ photo.getName());
+
+        /**
+         * 서버에 사진이외의 텍스트를 보낼 경우를 생각해서 일단 넣어둠
+         */
         // add another part within the multipart request
-        String descriptionString = "hello, this is description speaking";
-        RequestBody description =
-                RequestBody.create(
-                        MediaType.parse("multipart/form-data"), descriptionString);
+        String descriptionString = "android";
 
-        // finally, execute the request
-        Call<ResponseBody> call = service.upload(description, body);
+        RequestBody description = RequestBody.create(MediaType.parse("multipart/form-data"), descriptionString);
+
+
+        /**
+         * 사진 업로드하는 부분 // POST방식 이용
+         */
+        Call<ResponseBody> call = service.upload(body, description);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<ResponseBody> call,
-                                   Response<ResponseBody> response) {
-                Log.v("Upload", "success");
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+
+                if(response.isSuccessful()){
+
+                    Gson gson = new Gson();
+                    try {
+                        String getResult = response.body().string();
+
+                        JsonParser parser = new JsonParser();
+                        JsonElement rootObejct = parser.parse(getResult);
+
+//                        Log.i("mytag",rootObejct.toString());
+
+                        UploadResult example = gson.fromJson(rootObejct, UploadResult.class);
+
+                        Log.i("mytag",example.url);
+
+                        String result = example.result;
+
+                        if(result.equals("success")){
+                            Toast.makeText(getApplicationContext(),"사진 업로드 성공!!!!",Toast.LENGTH_SHORT).show();
+                        }
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        Log.i("MyTag", "error : "+e.getMessage());
+                    }
+
+//
+//                    try{
+//
+//                        Log.i("myTag",response.body().string());
+//
+//                        String jsonString  = gson.toJson(response.body().string());
+//                        JSONObject jsonObject = new JSONObject(jsonString);
+//
+//
+//                        Log.i("myTag",jsonString);
+//
+//
+//                        String resultMsg = jsonObject.getString("result");
+//
+//                        if(resultMsg.equals("success")){
+//                            Toast.makeText(getApplicationContext(),"사진 업로드 성공!!!!",Toast.LENGTH_SHORT).show();
+//                        }
+//
+//                    }
+//                    catch (JSONException e) {
+//                        e.printStackTrace();
+//                        Log.i("MyTag", "1"+e.getMessage());
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                        Log.i("MyTag", "2"+e.getMessage());
+//                    }
+
+                }else{
+                    Toast.makeText(getApplicationContext(),"사진 업로드 실패!!!!",Toast.LENGTH_SHORT).show();
+                }
+
+
+                // dismiss dialog
+                asyncDialog.dismiss();
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 Log.e("Upload error:", t.getMessage());
+
+                // dismiss dialog
+                asyncDialog.dismiss();
             }
+
+
+
         });
     }
 
