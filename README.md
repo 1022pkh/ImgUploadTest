@@ -16,6 +16,23 @@ node.js는 중요 부분의 코드만 올립니다.
 그 결과 자신도 multer모듈로 했을 때 안되어서 formidable 모듈을 사용했다고 함. 
 multer 모듈은 웹페이지내에 적합한 모듈이라고 함
 
+2016.11.20
+
+기존의 조사에서는 formidable 모듈이 좋다고 들었지만, 최근 다시 이미지 업로드부분에 대해서 공부 및 조사를 하니 multer모듈이 적합하다고 하였다.
+그래서 다시 조사 및 공부를 통해 아래의 코드로 간단하게 업로드를 할 수 있었다.
+앞으로는 multer 모듈을 사용하는 것이 더 좋을 듯 하다.
+
+    app.post('/posts', upload.single('image'), function (req, res, next) {
+
+        console.log("Request Get img upload");
+
+        res.setHeader('Content-Type', 'application/json');
+        res.send(JSON.stringify(
+            { result : "success" }
+        ));
+
+    })
+
 ----
 
     app.post('/upload',function(req,res){ 
